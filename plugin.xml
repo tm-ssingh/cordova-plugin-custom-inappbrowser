@@ -128,8 +128,16 @@
         <header-file src="src/ios/CDVInAppBrowser.h" />
         
 	    <source-file src="src/ios/CDVInAppBrowser.m" />
+        
         <resource-file src="src/ios/close_icon@2x.png" />
         <resource-file src="src/ios/close_icon@3x.png" />
+        <resource-file src="src/ios/refresh@2x.png" />
+        <resource-file src="src/ios/refresh@3x.png" />
+        <resource-file src="src/ios/navRight@2x.png" />
+        <resource-file src="src/ios/navRight@3x.png" />
+        <resource-file src="src/ios/navLeft@2x.png" />
+        <resource-file src="src/ios/navLeft@3x.png" />
+        
 	    <framework src="CoreGraphics.framework" />
     </platform>
 

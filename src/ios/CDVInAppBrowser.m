@@ -37,6 +37,7 @@
 
 @interface CDVInAppBrowser () {
     NSInteger _previousStatusBarStyle;
+    NSString *_navigationBarColor;
 }
 @end
 
@@ -119,6 +120,12 @@
 - (void)openInInAppBrowser:(NSURL*)url withOptions:(NSString*)options
 {
     CDVInAppBrowserOptions* browserOptions = [CDVInAppBrowserOptions parseOptions:options];
+    
+    //TODO: remove later
+    //browserOptions.toolbar = YES;
+    //browserOptions.location = YES;
+    
+    _navigationBarColor = browserOptions.navbarcolor;
     
     if (browserOptions.clearcache) {
         NSHTTPCookie *cookie;
@@ -239,7 +246,12 @@
     nav.navigationBarHidden = NO;
     nav.navigationBar.translucent = NO;
     nav.navigationBar.tintColor = [UIColor whiteColor];
-    nav.navigationBar.barTintColor = [UIColor colorWithRed:237.0f/255.0f green:26.0f/255.0f blue:61.0f/255.0f alpha:1.0];
+    if (_navigationBarColor) {
+        nav.navigationBar.barTintColor = [self colorFromHexString:_navigationBarColor];
+    } else {
+        nav.navigationBar.barTintColor = [UIColor darkGrayColor];
+    }
+    //[UIColor colorWithRed:237.0f/255.0f green:26.0f/255.0f blue:61.0f/255.0f alpha:1.0];
     nav.modalPresentationStyle = self.inAppBrowserViewController.modalPresentationStyle;		    nav.modalPresentationStyle = self.inAppBrowserViewController.modalPresentationStyle;
     [nav.navigationBar setTitleTextAttributes:
      @{NSForegroundColorAttributeName:[UIColor whiteColor]}];
@@ -515,6 +527,15 @@
     _previousStatusBarStyle = -1; // this value was reset before reapplying it. caused statusbar to stay black on ios7
 }
 
+// Assumes input like "#00FF00" (#RRGGBB).
+- (UIColor *)colorFromHexString:(NSString *)hexString {
+    unsigned rgbValue = 0;
+    NSScanner *scanner = [NSScanner scannerWithString:hexString];
+    [scanner setScanLocation:1]; // bypass '#' character
+    [scanner scanHexInt:&rgbValue];
+    return [UIColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0 green:((rgbValue & 0xFF00) >> 8)/255.0 blue:(rgbValue & 0xFF)/255.0 alpha:1.0];
+}
+
 @end
 
 #pragma mark CDVInAppBrowserViewController
@@ -530,6 +551,10 @@
         _userAgent = userAgent;
         _prevUserAgent = prevUserAgent;
         _browserOptions = browserOptions;
+        
+        //TODO: remove later
+        //_browserOptions.toolbarposition = kInAppBrowserToolbarBarPositionBottom;
+        
 #ifdef __CORDOVA_4_0_0
         _webViewDelegate = [[CDVUIWebViewDelegate alloc] initWithDelegate:self];
 #else
@@ -610,6 +635,7 @@
     self.toolbar.multipleTouchEnabled = NO;
     self.toolbar.opaque = NO;
     self.toolbar.userInteractionEnabled = YES;
+    self.toolbar.barTintColor = [UIColor colorWithRed:248.0f/255.0f green:248.0f/255.0f blue:248.0f/255.0f alpha:1.0];
     
     CGFloat labelInset = 5.0;
     float locationBarY = toolbarIsAtBottom ? self.view.bounds.size.height - FOOTER_HEIGHT : self.view.bounds.size.height - LOCATIONBAR_HEIGHT;
@@ -640,20 +666,31 @@
     self.addressLabel.shadowOffset = CGSizeMake(0.0, -1.0);
     self.addressLabel.text = NSLocalizedString(@"Loading...", nil);
     self.addressLabel.textAlignment = NSTextAlignmentLeft;
-    self.addressLabel.textColor = [UIColor colorWithWhite:1.000 alpha:1.000];
+    self.addressLabel.textColor = [UIColor blackColor];
+    self.addressLabel.font = [UIFont systemFontOfSize:12.0f];
+    ///[UIColor colorWithWhite:1.000 alpha:1.000];
     self.addressLabel.userInteractionEnabled = NO;
     
-    NSString* frontArrowString = NSLocalizedString(@"►", nil); // create arrow from Unicode char
-    self.forwardButton = [[UIBarButtonItem alloc] initWithTitle:frontArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
+    //NSString* frontArrowString = NSLocalizedString(@"►", nil); // create arrow from Unicode char
+    self.forwardButton = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"navRight"] style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
+    //self.forwardButton = [[UIBarButtonItem alloc] initWithTitle:frontArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goForward:)];
     self.forwardButton.enabled = YES;
     self.forwardButton.imageInsets = UIEdgeInsetsZero;
+    self.forwardButton.tintColor = [UIColor lightGrayColor];
     
-    NSString* backArrowString = NSLocalizedString(@"◄", nil); // create arrow from Unicode char
-    self.backButton = [[UIBarButtonItem alloc] initWithTitle:backArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
+    //NSString* backArrowString = NSLocalizedString(@"◄", nil); // create arrow from Unicode char
+    //self.backButton = [[UIBarButtonItem alloc] initWithTitle:backArrowString style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
+    self.backButton = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"navLeft"] style:UIBarButtonItemStylePlain target:self action:@selector(goBack:)];
     self.backButton.enabled = YES;
     self.backButton.imageInsets = UIEdgeInsetsZero;
+    self.backButton.tintColor = [UIColor lightGrayColor];
     
-    [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
+    self.refreshPage = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"refresh"] style:UIBarButtonItemStylePlain target:self action:@selector(refreshPage:)];
+    self.refreshPage.enabled = YES;
+    self.refreshPage.imageInsets = UIEdgeInsetsZero;
+    self.refreshPage.tintColor = [UIColor lightGrayColor];
+    
+    [self.toolbar setItems:@[flexibleSpaceButton, self.backButton, flexibleSpaceButton, self.forwardButton, flexibleSpaceButton, self.refreshPage, flexibleSpaceButton]];
     
     self.view.backgroundColor = [UIColor whiteColor];
     [self.view addSubview:self.toolbar];
@@ -676,8 +713,8 @@
     self.closeButton.tintColor = [UIColor colorWithRed:60.0 / 255.0 green:136.0 / 255.0 blue:230.0 / 255.0 alpha:1];
     
     NSMutableArray* items = [self.toolbar.items mutableCopy];
-    [items replaceObjectAtIndex:0 withObject:self.closeButton];
-    [self.toolbar setItems:items];
+    ///[items replaceObjectAtIndex:0 withObject:self.closeButton];
+    ///[self.toolbar setItems:items];
 }
 
 - (void)showLocationBar:(BOOL)show
@@ -796,9 +833,9 @@
 {
     [super viewDidLoad];
     UIBarButtonItem *done = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"close_icon"] style:UIBarButtonItemStylePlain target:self action:@selector(close)];
-    //initWithTitle:@"X" style:UIBarButtonItemStylePlain target:self action:@selector(close)];
+    
     self.navigationItem.rightBarButtonItem = done;
-    self.title = @"Singtel's Data Protection Policy";
+    self.title = _browserOptions.pagetitle;// @"Singtel's Data Protection Policy";
 }
 
 - (void)viewDidUnload
@@ -862,6 +899,10 @@
 - (void)goForward:(id)sender
 {
     [self.webView goForward];
+}
+
+- (void)refreshPage:(id)sender {
+    [self.webView reload];
 }
 
 - (void)viewWillAppear:(BOOL)animated
