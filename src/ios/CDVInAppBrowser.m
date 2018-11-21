@@ -38,6 +38,7 @@
 @interface CDVInAppBrowser () {
     NSInteger _previousStatusBarStyle;
     NSString *_navigationBarColor;
+    CDVInAppBrowserOptions *tmpBrowserOptions;
 }
 @end
 
@@ -126,6 +127,7 @@
     //browserOptions.location = YES;
     
     _navigationBarColor = browserOptions.navbarcolor;
+    tmpBrowserOptions = browserOptions;
     
     if (browserOptions.clearcache) {
         NSHTTPCookie *cookie;
@@ -243,7 +245,11 @@
      nav.modalPresentationStyle = self.inAppBrowserViewController.modalPresentationStyle;
      */
     /*Sukhwinder: Added below lines */
-    nav.navigationBarHidden = NO;
+    if (!tmpBrowserOptions.pagetitle || [tmpBrowserOptions.pagetitle isEqualToString: @""]) {
+        nav.navigationBarHidden = YES;
+    } else {
+        nav.navigationBarHidden = NO;
+    }
     nav.navigationBar.translucent = NO;
     nav.navigationBar.tintColor = [UIColor whiteColor];
     if (_navigationBarColor) {
@@ -252,7 +258,7 @@
         nav.navigationBar.barTintColor = [UIColor darkGrayColor];
     }
     //[UIColor colorWithRed:237.0f/255.0f green:26.0f/255.0f blue:61.0f/255.0f alpha:1.0];
-    nav.modalPresentationStyle = self.inAppBrowserViewController.modalPresentationStyle;		    nav.modalPresentationStyle = self.inAppBrowserViewController.modalPresentationStyle;
+    nav.modalPresentationStyle = self.inAppBrowserViewController.modalPresentationStyle;            nav.modalPresentationStyle = self.inAppBrowserViewController.modalPresentationStyle;
     [nav.navigationBar setTitleTextAttributes:
      @{NSForegroundColorAttributeName:[UIColor whiteColor]}];
     /************************************/
@@ -955,7 +961,12 @@
     if (isTopLevelNavigation) {
         self.currentURL = request.URL;
     }
-    return [self.navigationDelegate webView:theWebView shouldStartLoadWithRequest:request navigationType:navigationType];
+    if ([[request.URL absoluteString] containsString:@"exit.html"]) {
+        [self close];
+        return false;
+    }else {
+        return [self.navigationDelegate webView:theWebView shouldStartLoadWithRequest:request navigationType:navigationType];
+    }
 }
 
 - (void)webViewDidFinishLoad:(UIWebView*)theWebView
