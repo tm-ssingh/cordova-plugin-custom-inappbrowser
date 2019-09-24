@@ -268,6 +268,7 @@
     // Run later to avoid the "took a long time" log message.
     dispatch_async(dispatch_get_main_queue(), ^{
         if (weakSelf.inAppBrowserViewController != nil) {
+            /*Sukhwinder: commented below lines on 24 Sept 2019 
             CGRect frame = [[UIScreen mainScreen] bounds];
             UIWindow *tmpWindow = [[UIWindow alloc] initWithFrame:frame];
             UIViewController *tmpController = [[UIViewController alloc] init];
@@ -276,6 +277,10 @@
             
             [tmpWindow makeKeyAndVisible];
             [tmpController presentViewController:nav animated:YES completion:nil];
+            */
+            /*Sukhwinder: Added below lines on 24 Sept 2019 */
+            [self.viewController presentViewController:nav animated:YES completion:nil];
+            //***************
         }
     });
 }
@@ -866,9 +871,13 @@
     self.currentURL = nil;
     
     if ((self.navigationDelegate != nil) && [self.navigationDelegate respondsToSelector:@selector(browserExit)]) {
+        /* Sukhwinder added below line on 24 Sept 2019 */
+        [self.navigationDelegate.viewController dismissViewControllerAnimated:YES completion:nil];
+        //***************
         [self.navigationDelegate browserExit];
     }
     
+    /* Sukhwinder commented below lines on 24 Sept 2019
     __weak UIViewController* weakSelf = self;
     
     // Run later to avoid the "took a long time" log message.
@@ -879,6 +888,7 @@
             [[weakSelf parentViewController] dismissViewControllerAnimated:YES completion:nil];
         }
     });
+    */
 }
 
 - (void)navigateTo:(NSURL*)url
